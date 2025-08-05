@@ -16,15 +16,23 @@ class PlayerScreen extends StatefulWidget {
   State<PlayerScreen> createState() => _PlayerScreenState();
 }
 
-class _PlayerScreenState extends State<PlayerScreen> {
+class _PlayerScreenState extends State<PlayerScreen>
+    with SingleTickerProviderStateMixin {
   late AudioPlayer _player;
   late int _currentIndex;
+  late AnimationController _glowController;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.currentIndex;
     _player = AudioPlayer();
+    _glowController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+      lowerBound: 1.0,
+      upperBound: 1.3,
+    )..repeat(reverse: true);
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         nextSong();
@@ -68,6 +76,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
   @override
   void dispose() {
     _player.dispose();
+    _glowController.dispose();
     super.dispose();
   }
 
@@ -92,11 +101,39 @@ class _PlayerScreenState extends State<PlayerScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              AnimatedBuilder(
+                animation: _glowController,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _glowController.value,
+                    child: Container(
+                      width: 180,
+                      height: 180,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: const RadialGradient(
+                          colors: [Colors.orange, Colors.deepPurple],
+                          center: Alignment.center,
+                          radius: 0.8,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.deepPurple.withValues(),
+                            blurRadius: 30 * _glowController.value,
+                            spreadRadius: 10 * _glowController.value,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 20),
               Container(
                 padding: const EdgeInsets.all(8),
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: const [
                     BoxShadow(
@@ -164,7 +201,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(0.3),
+        color: Colors.white.withValues(),
         boxShadow: const [
           BoxShadow(
             color: Colors.black45,
